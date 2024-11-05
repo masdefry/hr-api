@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+
+model User{
+  id  String @id @default(uuid())
+  firstName String
+  lastName String 
+  email String 
+  password String 
+  leaveBalance Int @default(12)
+  role Role
+  salary Int
+  tokenResetPassword String? @db.Text
+
+  shiftsId Int
+  shifts Shift @relation(fields: [shiftsId], references: [id])
+
+  attendances Attendance[]
+  usersRequestId Leave[] @relation("usersRequestId")
+  usersApprovalId  Leave[] @relation("usersApprovalId")
+  userProfile UserProfile? 
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("users")
+}
+
+model UserProfile{
+  id Int @id @default(autoincrement())
+  birthDate DateTime @db.Date()
+  phoneNumber String @db.Char(15)
+  address String @db.Char(255)
+
+  usersId String @unique
+  users User @relation(fields: [usersId], references: [id])
+
+  userProfileImage UserProfileImage[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("user_profiles")
+}
+
+model UserProfileImage{
+  id Int @id @default(autoincrement())
+  imageUrl String @db.Text
+  directory String 
+
+  userProfilesId Int 
+  userProfile UserProfile @relation(fields: [userProfilesId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("user_profile_images")
+}
+
+enum Role{
+  HR 
+  MANAGER 
+  STAFF
+}
+
+model Shift{
+  id Int @id @default(autoincrement())
+  startTime DateTime @db.Time()
+  endTime DateTime @db.Time()
+
+  users User[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("shifts")
+}
+
+model Attendance{
+  id Int @id @default(autoincrement())
+  clockIn DateTime
+  clockOut DateTime?
+  deduction Int?
+
+  usersId String 
+  users User @relation(fields: [usersId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("attendances")
+}
+
+model Leave{
+  id Int @id @default(autoincrement())
+  startDate DateTime
+  endDate DateTime
+  reason String
+  leaveStatus LeaveStatus @default(PENDING)
+  typeLeave LeaveType
+
+  usersRequestId String 
+  usersRequest User @relation("usersRequestId", fields: [usersRequestId], references: [id])
+  usersApprovalId String? 
+  usersApproval User? @relation("usersApprovalId", fields: [usersApprovalId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("leaves")
+}
+
+enum LeaveStatus{
+  PENDING 
+  APPROVED 
+  REJECTED
+}
+
+enum LeaveType{
+  SAKIT
+  MELAHIRKAN
+  MENIKAH
+  KELUARGA_MENINGGAL 
+}
